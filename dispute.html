@@ -7,28 +7,27 @@
 <style>
   body { margin: 0; padding: 0; background: #222; overflow: hidden; touch-action: none; font-family: sans-serif; }
   canvas { display: block; width: 100vw; height: 100vh; background: #87CEEB; }
-  #ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-weight: bold; font-size: 24px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+  #ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-weight: bold; font-size: 20px; text-shadow: 2px 2px 0 #000; pointer-events: none; }
   .controls { position: absolute; bottom: 20px; display: flex; gap: 10px; }
-  #p1-controls { left: 20px; }
-  #p2-controls { right: 20px; }
-  button { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 2px solid white; color: white; font-size: 20px; font-weight: bold; touch-action: manipulation; user-select: none; }
+  #p1-controls { left: 10px; }
+  #p2-controls { right: 10px; }
+  button { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 2px solid white; color: white; font-size: 20px; font-weight: bold; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
   button:active { background: rgba(255,255,255,0.7); }
   .jump-btn { background: rgba(0,255,0,0.3); }
   .attack-btn { background: rgba(255,0,0,0.3); }
-  #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; font-size: 30px; z-index: 10; }
+  #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; font-size: 30px; z-index: 10; text-align: center; }
   #win-screen button { border-radius: 10px; width: 150px; height: 50px; font-size: 18px; margin-top: 20px; background: #4CAF50; border: none; }
 </style>
 </head>
 <body>
 
 <div id="ui">
-  <div id="p1-score">P1 Hat: 1</div>
-  <div id="p2-score">P2 Hat: 1</div>
+  <div id="p1-score">P1: 0</div>
+  <div id="p2-score">P2: 0</div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 
-<!-- دکمه‌های لمسی بازیکن اول (آبی) -->
 <div class="controls" id="p1-controls">
   <button id="p1-left">◀</button>
   <button id="p1-right">▶</button>
@@ -36,7 +35,6 @@
   <button id="p1-attack" class="attack-btn">✊</button>
 </div>
 
-<!-- دکمه‌های لمسی بازیکن دوم (قرمز) -->
 <div class="controls" id="p2-controls">
   <button id="p2-left">◀</button>
   <button id="p2-right">▶</button>
@@ -68,7 +66,7 @@ resize();
 const GRAVITY = 0.6;
 const MOVE_SPEED = 4;
 const JUMP_POWER = -12;
-const ATTACK_RANGE = 50;
+const ATTACK_RANGE = 55;
 const ATTACK_COOLDOWN = 30;
 
 class Player {
@@ -90,7 +88,6 @@ class Player {
   }
 
   update(controls) {
-    // Stun logic
     if (this.stunTimer > 0) {
       this.stunTimer--;
       this.vx *= 0.9;
@@ -100,6 +97,7 @@ class Player {
       else { this.vx *= 0.8; }
 
       if (controls.jump && this.y >= H - this.h - 1) { this.vy = JUMP_POWER; }
+      
       if (controls.attack && this.attackTimer === 0) {
         this.attackTimer = ATTACK_COOLDOWN;
         this.isAttacking = true;
@@ -113,24 +111,20 @@ class Player {
     this.x += this.vx;
     this.y += this.vy;
 
-    // Floor collision
     if (this.y > H - this.h) {
       this.y = H - this.h;
       this.vy = 0;
     }
 
-    // Walls
     if (this.x < 0) this.x = 0;
     if (this.x + this.w > W) this.x = W - this.w;
   }
 
   draw() {
     ctx.save();
-    // Body
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
     
-    // Face (eyes)
     ctx.fillStyle = 'white';
     if (this.facing === 1) {
       ctx.fillRect(this.x + 25, this.y + 20, 10, 10);
@@ -138,20 +132,17 @@ class Player {
       ctx.fillRect(this.x + 5, this.y + 20, 10, 10);
     }
 
-    // Hat
     if (this.hasHat) {
       ctx.fillStyle = 'black';
-      ctx.fillRect(this.x - 10, this.y - 15, this.w + 20, 15); // brim
-      ctx.fillRect(this.x + 5, this.y - 40, this.w - 10, 25); // top
+      ctx.fillRect(this.x - 10, this.y - 15, this.w + 20, 15); 
+      ctx.fillRect(this.x + 5, this.y - 40, this.w - 10, 25); 
     }
 
-    // Attack hitbox
     if (this.isAttacking) {
       ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
       let hx = this.facing === 1 ? this.x + this.w : this.x - ATTACK_RANGE;
       ctx.fillRect(hx, this.y + 20, ATTACK_RANGE, 30);
     }
-
     ctx.restore();
   }
 }
@@ -160,8 +151,8 @@ class Hat {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 10;
-    this.vy = -10;
+    this.vx = (Math.random() - 0.5) * 8;
+    this.vy = -8;
     this.w = 40;
     this.h = 20;
     this.active = true;
@@ -184,8 +175,8 @@ class Hat {
   }
 }
 
-let player1 = new Player(100, '#3498db', true);
-let player2 = new Player(W - 150, '#e74c3c', false);
+let player1 = new Player(50, '#3498db', true);
+let player2 = new Player(W - 90, '#e74c3c', false);
 let hats = [];
 let gameOver = false;
 
@@ -203,36 +194,22 @@ function bindButton(id, player, action) {
   btn.addEventListener('mouseleave', () => keys[player][action] = false);
 }
 
-// Bind P1
-bindButton('p1-left', 'p1', 'left');
-bindButton('p1-right', 'p1', 'right');
-bindButton('p1-jump', 'p1', 'jump');
-bindButton('p1-attack', 'p1', 'attack');
-
-// Bind P2
-bindButton('p2-left', 'p2', 'left');
-bindButton('p2-right', 'p2', 'right');
-bindButton('p2-jump', 'p2', 'jump');
-bindButton('p2-attack', 'p2', 'attack');
+bindButton('p1-left', 'p1', 'left'); bindButton('p1-right', 'p1', 'right');
+bindButton('p1-jump', 'p1', 'jump'); bindButton('p1-attack', 'p1', 'attack');
+bindButton('p2-left', 'p2', 'left'); bindButton('p2-right', 'p2', 'right');
+bindButton('p2-jump', 'p2', 'jump'); bindButton('p2-attack', 'p2', 'attack');
 
 function checkHit(attacker, defender) {
   if (!attacker.isAttacking || attacker.stunTimer > 0) return;
-  
   let hx = attacker.facing === 1 ? attacker.x + attacker.w : attacker.x - ATTACK_RANGE;
   let hy = attacker.y + 20;
 
-  // Simple AABB collision
-  if (hx < defender.x + defender.w &&
-      hx + ATTACK_RANGE > defender.x &&
-      hy < defender.y + defender.h &&
-      hy + 30 > defender.y) {
-    
-    // Hit!
-    attacker.isAttacking = false; // hit only once
-    defender.stunTimer = 30; // stun
-    defender.vx = attacker.facing * 10; // knockback
+  if (hx < defender.x + defender.w && hx + ATTACK_RANGE > defender.x &&
+      hy < defender.y + defender.h && hy + 30 > defender.y) {
+    attacker.isAttacking = false;
+    defender.stunTimer = 30;
+    defender.vx = attacker.facing * 12;
     defender.vy = -5;
-    
     if (defender.hasHat) {
       defender.hasHat = false;
       hats.push(new Hat(defender.x, defender.y - 30));
@@ -243,24 +220,15 @@ function checkHit(attacker, defender) {
 function checkHatPickup(player) {
   for (let i = hats.length - 1; i >= 0; i--) {
     let hat = hats[i];
-    if (hat.active &&
-        player.x < hat.x + hat.w &&
-        player.x + player.w > hat.x &&
-        player.y < hat.y + hat.h &&
-        player.y + player.h > hat.y) {
-      
+    if (hat.active && player.x < hat.x + hat.w && player.x + player.w > hat.x &&
+        player.y < hat.y + hat.h && player.y + player.h > hat.y) {
       player.hasHat = true;
       hat.active = false;
       hats.splice(i, 1);
-      
-      // Win condition: if you take a hat, you score!
       player.score++;
-      document.getElementById('p1-score').innerText = `P1 Hat: ${player1.score}`;
-      document.getElementById('p2-score').innerText = `P2 Hat: ${player2.score}`;
-      
-      if (player.score >= 3) {
-        endGame(player);
-      }
+      document.getElementById('p1-score').innerText = `P1: ${player1.score}`;
+      document.getElementById('p2-score').innerText = `P2: ${player2.score}`;
+      if (player.score >= 3) endGame(player);
     }
   }
 }
@@ -272,12 +240,10 @@ function endGame(winner) {
 }
 
 function resetGame() {
-  player1 = new Player(100, '#3498db', true);
-  player2 = new Player(W - 150, '#e74c3c', false);
-  player1.score = 0;
-  player2.score = 0;
-  document.getElementById('p1-score').innerText = `P1 Hat: 0`;
-  document.getElementById('p2-score').innerText = `P2 Hat: 0`;
+  player1 = new Player(50, '#3498db', true);
+  player2 = new Player(W - 90, '#e74c3c', false);
+  document.getElementById('p1-score').innerText = `P1: 0`;
+  document.getElementById('p2-score').innerText = `P2: 0`;
   hats = [];
   gameOver = false;
   document.getElementById('win-screen').style.display = 'none';
@@ -285,10 +251,7 @@ function resetGame() {
 
 function gameLoop() {
   if (gameOver) return;
-
   ctx.clearRect(0, 0, W, H);
-
-  // Draw floor
   ctx.fillStyle = '#654321';
   ctx.fillRect(0, H - 20, W, 20);
 
@@ -307,7 +270,6 @@ function gameLoop() {
 
   requestAnimationFrame(gameLoop);
 }
-
 gameLoop();
 </script>
 </body>
